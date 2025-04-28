@@ -159,7 +159,9 @@ export const Chat: React.FC<ChatProps> = ({
   return (
     <div className={clsx('flex h-full w-full flex-col bg-white px-4 pb-4', className)} data-testid='chat-root'>
       {/* header */}
-      <div className='chat-drag-handle -mx-4 mb-2 flex cursor-move items-center justify-between px-4 pt-4'>
+      <div
+        className={clsx('chat-drag-handle -mx-4 mb-2 flex items-center justify-between px-4 pt-4', !isFullScreen && 'cursor-move')}
+        onDoubleClick={() => onToggleFullScreen && onToggleFullScreen()}>
         <h2 className='text-xl font-semibold text-indigo-700'>SmartspAI</h2>
         <div className='flex gap-2'>
           {onToggleFullScreen && (

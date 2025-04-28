@@ -21,6 +21,23 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
     y: window.innerHeight - 560 - 96,
   })
 
+  /* ---------- intro tooltip ---------- */
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  useEffect(() => {
+    const count = Number(localStorage.getItem('chatTooltipCount') ?? '0')
+    if (count < 99999) {
+      setShowTooltip(true)
+      localStorage.setItem('chatTooltipCount', String(count + 1))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showTooltip) return
+    const t = setTimeout(() => setShowTooltip(false), 10000)
+    return () => clearTimeout(t)
+  }, [showTooltip])
+
   /* ---------- ESC leaves fullscreen ---------- */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false)
@@ -53,6 +70,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
 
   return (
     <>
+      {/* Tooltip */}
+      <AnimatePresence>
+        {showTooltip && !open && (
+          <motion.div
+            key='chat-tooltip'
+            className='fixed right-6 bottom-27 z-[9999] rounded-lg bg-gray-100 px-3 pt-1.5 pb-1 text-sm font-medium text-gray-600/85 select-none'
+            initial={{ opacity: 0, y: 10, transition: { duration: 0.3 } }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.2 } }}
+            exit={{ opacity: 0, y: 10, transition: { duration: 0.3 } }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20, duration: 0.5 }}>
+            <span className='ml-1 inline-block [width:0] [animation:typing_2s_steps(28,end)_0.3s_forwards,_blink_1s_step-end_infinite] overflow-hidden border-r-2 border-gray-400/70 whitespace-nowrap'>
+              Hello, I’m here to help with any of your scraping requests!
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FAB */}
       <motion.button
         type='button'
         aria-label={open ? 'Close chat' : 'Open chat'}
@@ -90,7 +125,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
                 setPos(p)
               }}
               className={clsx('fixed', isFull ? 'z-[9999]' : 'z-[9998]')}
-              style={{ borderRadius: isFull ? 0 : '0.75rem' }}>
+              style={{ borderRadius: isFull ? 0 : '0.75rem' }}
+              dragHandleClassName='chat-drag-handle'>
               {panel}
             </Rnd>
           )}

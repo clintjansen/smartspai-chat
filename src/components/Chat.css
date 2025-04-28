@@ -32,3 +32,18 @@
     transform: scale(1);
   }
 }
+
+@keyframes typing {
+  from {
+    width: 0;
+  } /* <- <- no flash */
+  to {
+    width: 48ch;
+  } /* 28 = #visible characters       */
+}
+
+@keyframes blink {
+  50% {
+    border-color: transparent;
+  }
+}
