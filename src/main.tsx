@@ -1,10 +1,13 @@
+import './styles.css'
+
+import { ChatWidget } from './components/ChatWidget.tsx'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+
+const wsEndpoint = import.meta.env['VITE_WS_ENDPOINT'] || 'ws://localhost:8000/ws'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
-  </StrictMode>,
+    <ChatWidget wsEndpoint={wsEndpoint} />
+  </StrictMode>
 )
