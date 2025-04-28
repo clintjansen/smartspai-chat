@@ -1,8 +1,10 @@
 import './Chat.css'
 
+import { ArrowsPointingInIcon, ArrowsPointingOutIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import React, { FormEvent, useEffect, useRef, useState } from 'react'
 
 import ReactMarkdown from 'react-markdown'
+import clsx from 'clsx'
 import remarkGfm from 'remark-gfm'
 
 export interface ChatProps {
@@ -10,8 +12,9 @@ export interface ChatProps {
   initialMessage?: string
   /** Close handler injected by ChatWidget */
   onClose?: () => void
-  /** Extra class names if the host wants to tweak styling */
   className?: string
+  onToggleFullScreen?: () => void
+  isFullScreen?: boolean
 }
 
 interface Message {
@@ -22,12 +25,14 @@ interface Message {
 
 export const Chat: React.FC<ChatProps> = ({
   wsEndpoint,
-  initialMessage = 'Scrape Posters for Drukwerkdeal in NL & BE',
+  initialMessage = 'Scrape Posters for Drukwerkdeal in NL & BE', // debug msg
   onClose,
   className = '',
+  onToggleFullScreen,
+  isFullScreen = false,
 }) => {
   const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('Remove Flyers3 and Belgium')
+  const [input, setInput] = useState('')
   const [showLoader, setLoader] = useState<string>('')
   const [disableInput, setDisableInput] = useState(false)
 
@@ -152,15 +157,29 @@ export const Chat: React.FC<ChatProps> = ({
   }
 
   return (
-    <div className={`flex h-full w-full flex-col bg-white p-4 ${className}`} data-testid='chat-root'>
+    <div className={clsx('flex h-full w-full flex-col bg-white px-4 pb-4', className)} data-testid='chat-root'>
       {/* header */}
-      <div className='mb-2 flex items-center justify-between'>
+      <div className='chat-drag-handle -mx-4 mb-2 flex cursor-move items-center justify-between px-4 pt-4'>
         <h2 className='text-xl font-semibold text-indigo-700'>SmartspAI</h2>
-        {onClose && (
-          <button onClick={onClose} className='rounded-md p-1 text-gray-600 hover:text-gray-900' aria-label='Close chat'>
-            &#10005;
-          </button>
-        )}
+        <div className='flex gap-2'>
+          {onToggleFullScreen && (
+            <button
+              onClick={onToggleFullScreen}
+              aria-label={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
+              className='cursor-pointer rounded-md p-1 text-gray-600 hover:text-gray-900'>
+              {isFullScreen ? (
+                <ArrowsPointingInIcon className='size-5' /> // shrink
+              ) : (
+                <ArrowsPointingOutIcon className='size-5' /> // expand
+              )}
+            </button>
+          )}
+          {onClose && (
+            <button onClick={onClose} aria-label='Close chat' className='cursor-pointer rounded-md p-1 text-gray-600 hover:text-gray-900'>
+              <XMarkIcon className='size-5.5' strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* message list */}

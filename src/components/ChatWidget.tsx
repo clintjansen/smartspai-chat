@@ -1,30 +1,55 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, Transition, Variants, motion } from 'framer-motion'
 import { Chat, ChatProps } from './Chat'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
+import { Rnd } from 'react-rnd'
+import clsx from 'clsx'
 import { createPortal } from 'react-dom'
 
 export interface ChatWidgetProps extends Omit<ChatProps, 'onClose'> {
-  /** Optional container (defaults to document.body) */
   portalTarget?: HTMLElement
 }
 
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.body, ...chatProps }) => {
   const [open, setOpen] = useState(false)
+  const [isFull, setFull] = useState(false)
 
-  /* ---------- Animation presets ---------- */
-  const fabVariants = { idle: { y: [0, -4, 0] } }
+  /* ---------- remember position/size between fullscreen hops ---------- */
+  const [size, setSize] = useState({ width: 640, height: 560 })
+  const [pos, setPos] = useState({
+    x: window.innerWidth - 640 - 24,
+    y: window.innerHeight - 560 - 96,
+  })
 
-  const panelVariants = {
-    hidden: { opacity: 0, scale: 0.8, y: 30, originX: 1, originY: 1 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 25 },
-    },
-    exit: { opacity: 0, scale: 0.8, y: 30, transition: { duration: 0.2 } },
-  }
+  /* ---------- ESC leaves fullscreen ---------- */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false)
+    window.addEventListener('keydown', onKey) // ESC is the canonical exit key
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const toggleFull = () => setFull((v) => !v)
+
+  const panel = (
+    <motion.div
+      className={clsx('h-full w-full overflow-hidden bg-white shadow-2xl', isFull ? 'border-none' : 'rounded-xl border border-gray-300')}
+      layout // <- let Framer animate size/pos changes
+      // transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      variants={panelVariants}
+      initial='hidden'
+      animate='visible'
+      exit='exit'>
+      <Chat
+        {...chatProps}
+        isFullScreen={isFull}
+        onToggleFullScreen={toggleFull}
+        onClose={() => {
+          setFull(false)
+          setOpen(false)
+        }}
+      />
+    </motion.div>
+  )
 
   return (
     <>
@@ -34,16 +59,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
         onClick={() => setOpen((v) => !v)}
         className='fixed right-6 bottom-6 z-[9999] flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg focus:outline-none'
         variants={fabVariants}
-        animate='idle'
-        transition={{ duration: 2, repeat: Infinity, repeatType: 'loop' }}
+        animate={open ? 'open' : 'closed'}
         whileTap={{ scale: 0.9 }}>
         {open ? (
-          /* “×” icon */
           <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-8 w-8'>
             <path d='M18 6L6 18M6 6l12 12' stroke='currentColor' strokeWidth='2' strokeLinecap='round' />
           </svg>
         ) : (
-          /* Chat bubble icon */
           <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-8 w-8'>
             <path
               d='M2 12a9.985 9.985 0 0110-10 9.985 9.985 0 019.95 11.112A9.996 9.996 0 0112 22h-.877L6 24l1.938-4.875A9.995 9.995 0 012 12z'
@@ -56,20 +78,71 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
       {createPortal(
         <AnimatePresence>
           {open && (
-            <motion.div
-              key='panel'
-              className='fixed right-6 bottom-24 z-[9998] h-[560px] w-[640px] overflow-hidden rounded-xl border border-gray-300 bg-white shadow-2xl'
-              initial='hidden'
-              animate='visible'
-              exit='exit'
-              variants={panelVariants}
-              layoutId='chatBubble'>
-              <Chat {...chatProps} onClose={() => setOpen(false)} />
-            </motion.div>
+            <Rnd
+              bounds='window'
+              disableDragging={isFull}
+              enableResizing={isFull ? {} : resizeHandles}
+              size={isFull ? { width: '100vw', height: '100vh' } : size}
+              position={isFull ? { x: 0, y: 0 } : pos}
+              onDragStop={(_, d) => setPos({ x: d.x, y: d.y })}
+              onResizeStop={(_, __, ref, ___, p) => {
+                setSize({ width: ref.offsetWidth, height: ref.offsetHeight })
+                setPos(p)
+              }}
+              className={clsx('fixed', isFull ? 'z-[9999]' : 'z-[9998]')}
+              style={{ borderRadius: isFull ? 0 : '0.75rem' }}>
+              {panel}
+            </Rnd>
           )}
         </AnimatePresence>,
         portalTarget
       )}
     </>
   )
+}
+
+/* ---------- typed helper ---------- */
+const loopY: Transition = {
+  duration: 2.1,
+  repeat: Infinity,
+  repeatType: 'loop',
+  ease: 'easeInOut',
+} /* repeats only on properties that reference it
+
+/* ---------- Variants ---------- */
+const fabVariants: Variants = {
+  closed: {
+    y: [0, -5, 0],
+    scale: 1,
+    transition: { y: loopY }, // <— only y loops
+  },
+  open: {
+    y: 0,
+    scale: 0.8,
+    originX: 1,
+    originY: 1,
+    transition: { type: 'spring', stiffness: 400, damping: 30 },
+  },
+}
+
+const panelVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.8, y: 30, originX: 1, originY: 1 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { type: 'spring', stiffness: 300, damping: 25 },
+  },
+  exit: { opacity: 0, scale: 0.75, y: -24, transition: { duration: 0.25 } },
+}
+
+const resizeHandles = {
+  top: true,
+  left: true,
+  right: true,
+  bottom: true,
+  topLeft: true,
+  topRight: true,
+  bottomLeft: true,
+  bottomRight: true,
 }
