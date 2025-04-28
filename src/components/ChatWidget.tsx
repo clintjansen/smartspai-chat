@@ -15,11 +15,22 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
   const [isFull, setFull] = useState(false)
 
   /* ---------- remember position/size between fullscreen hops ---------- */
-  const [size, setSize] = useState({ width: 640, height: 560 })
-  const [pos, setPos] = useState({
-    x: window.innerWidth - 640 - 24,
-    y: window.innerHeight - 560 - 96,
+  const [size, setSize] = useState(() => {
+    const widthRatio = 2.25
+    const heightRatio = 1.4
+
+    return {
+      width: Math.max(640, window.innerWidth / widthRatio),
+      height: Math.max(560, window.innerHeight / heightRatio),
+    }
   })
+
+  console.log('size:', size)
+
+  const [pos, setPos] = useState(() => ({
+    x: window.innerWidth - size.width - 24,
+    y: window.innerHeight - size.height - 96,
+  }))
 
   /* ---------- intro tooltip ---------- */
   const [showTooltip, setShowTooltip] = useState(false)
@@ -34,7 +45,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
 
   useEffect(() => {
     if (!showTooltip) return
-    const t = setTimeout(() => setShowTooltip(false), 10000)
+    const t = setTimeout(() => setShowTooltip(false), 8000)
     return () => clearTimeout(t)
   }, [showTooltip])
 
@@ -137,6 +148,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
   )
 }
 
+export default ChatWidget
+
 /* ---------- typed helper ---------- */
 const loopY: Transition = {
   duration: 2.1,
@@ -148,7 +161,7 @@ const loopY: Transition = {
 /* ---------- Variants ---------- */
 const fabVariants: Variants = {
   closed: {
-    y: [0, -5, 0],
+    y: [0, -4, 0],
     scale: 1,
     transition: { y: loopY }, // <— only y loops
   },

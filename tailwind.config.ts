@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss'
 export default {
+  // prefix: 'sc-',
   content: ['./src/**/*.{ts,tsx,html}'],
   theme: {
     extend: {

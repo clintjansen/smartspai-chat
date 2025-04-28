@@ -1,5 +1,3 @@
-import './Chat.css'
-
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import React, { FormEvent, useEffect, useRef, useState } from 'react'
 
@@ -41,13 +39,13 @@ export const Chat: React.FC<ChatProps> = ({
   const initialMessageSent = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const sendMessage = (content: string) => {
-    if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return
+  // const sendMessage = (content: string) => {
+  //   if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return
 
-    const userMessage: Message = { sender: 'user', content }
-    setMessages((prev) => [...prev, userMessage])
-    ws.current.send(content)
-  }
+  //   const userMessage: Message = { sender: 'user', content }
+  //   setMessages((prev) => [...prev, userMessage])
+  //   ws.current.send(content)
+  // }
 
   useEffect(() => {
     let reconnect: ReturnType<typeof setTimeout> | null = null

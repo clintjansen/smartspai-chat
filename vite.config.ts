@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
@@ -8,17 +9,18 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), libInjectCss()],
   build: {
     lib: {
-      entry: './src/index.ts',
-      name: 'Smartspy Chat',
+      entry: resolve(__dirname, 'src/widget.tsx'),
+      name: 'SmartspyChat',
       fileName: (format) => `smartspai.${format}.js`,
-      formats: ['es', 'umd', 'iife'],
+      formats: ['es', 'iife'],
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
-      output: {
-        globals: { react: 'React', 'react-dom': 'ReactDOM' },
-      },
+      // output: { assetFileNames: 'smartspai.[ext]' },
+      external: [],
     },
-    cssCodeSplit: true,
+    // sourcemap: true,
+  },
+  define: {
+    'process.env': { NODE_ENV: 'production' },
   },
 })
