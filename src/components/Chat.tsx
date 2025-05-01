@@ -1,3 +1,5 @@
+import './Chat.css'
+
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import React, { FormEvent, useEffect, useRef, useState } from 'react'
 
@@ -33,6 +35,7 @@ export const Chat: React.FC<ChatProps> = ({
   const [input, setInput] = useState('')
   const [showLoader, setLoader] = useState<string>('')
   const [disableInput, setDisableInput] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(true)
 
   const ws = useRef<WebSocket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -54,12 +57,14 @@ export const Chat: React.FC<ChatProps> = ({
     const connectWebSocket = () => {
       if (unmounted) return
 
+      setIsConnecting(true)
       // Make sure to connect to your new endpoint, e.g., /ws/scrape
       // ws.current = new WebSocket('ws://localhost:8000/ws')
       ws.current = new WebSocket(wsEndpoint)
 
       ws.current.onopen = () => {
         console.log('WebSocket connected')
+        setIsConnecting(false)
         setDisableInput(false)
 
         if (!initialMessageSent.current) {
@@ -106,6 +111,8 @@ export const Chat: React.FC<ChatProps> = ({
       ws.current.onclose = () => {
         console.log('WebSocket disconnected')
         setDisableInput(true)
+        setIsConnecting(true)
+
         if (!unmounted) {
           console.log(`Attempting to reconnect...`)
           reconnect = setTimeout(() => {
@@ -202,14 +209,28 @@ export const Chat: React.FC<ChatProps> = ({
           </div>
         ))}
 
+        {/* “Connecting…” bubble */}
+        {isConnecting && (
+          <div className='mb-2 flex justify-start'>
+            <div className='prose inline-flex max-w-[80%] rounded-xl border border-white bg-white px-4 py-2'>
+              <span className='mr-2 font-medium text-slate-500/90'>Connecting</span>
+              <div className='thinking-dots pt-2'>
+                <span className='bg-slate-500/70'></span>
+                <span className='bg-slate-500/70'></span>
+                <span className='bg-slate-500/70'></span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Thinking dots animation when loading */}
         {showLoader && (
           <div className='mb-2 flex justify-start'>
             <div className='prose max-w-[80%] rounded-xl border border-gray-300 bg-white px-4 py-2'>
               <div className='thinking-dots'>
-                <span></span>
-                <span></span>
-                <span></span>
+                <span className='bg-[#888]'></span>
+                <span className='bg-[#888]'></span>
+                <span className='bg-[#888]'></span>
               </div>
             </div>
           </div>

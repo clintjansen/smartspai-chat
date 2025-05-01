@@ -62,7 +62,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
     <motion.div
       className={clsx('h-full w-full overflow-hidden bg-white shadow-2xl', isFull ? 'border-none' : 'rounded-xl border border-gray-300')}
       layout // <- let Framer animate size/pos changes
-      // transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       variants={panelVariants}
       initial='hidden'
       animate='visible'
@@ -86,13 +85,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
         {showTooltip && !open && (
           <motion.div
             key='chat-tooltip'
-            className='fixed right-6 bottom-27 z-[9999] rounded-lg bg-gray-100 px-3 pt-1.5 pb-1 text-sm font-medium text-gray-600/85 select-none'
+            className='fixed right-6 bottom-27 z-[9999] rounded-lg bg-gray-100 px-3 pt-1.5 pb-1 text-sm font-medium text-gray-600/85 shadow-sm select-none'
             initial={{ opacity: 0, y: 10, transition: { duration: 0.3 } }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.2 } }}
             exit={{ opacity: 0, y: 10, transition: { duration: 0.3 } }}
             transition={{ type: 'spring', stiffness: 200, damping: 20, duration: 0.5 }}>
             <span className='ml-1 inline-block [width:0] [animation:typing_2s_steps(28,end)_0.3s_forwards,_blink_1s_step-end_infinite] overflow-hidden border-r-2 border-gray-400/70 whitespace-nowrap'>
-              Hello, I’m here to help with any of your scraping requests!
+              Hello! I’m your assistant to help with any of your SmartSpy tasks.
             </span>
           </motion.div>
         )}
@@ -106,7 +105,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
         className='fixed right-6 bottom-6 z-[9999] flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg focus:outline-none'
         variants={fabVariants}
         animate={open ? 'open' : 'closed'}
-        whileTap={{ scale: 0.9 }}>
+        whileTap={{ scale: 0.9 }}
+        whileHover={open ? { scale: 0.85, y: 1, x: 1.5 } : {}}>
         {open ? (
           <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-8 w-8'>
             <path d='M18 6L6 18M6 6l12 12' stroke='currentColor' strokeWidth='2' strokeLinecap='round' />
