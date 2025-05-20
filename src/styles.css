@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-/* @import 'tailwindcss' prefix(sc); */
+/* @import 'tailwindcss'; */
+@import 'tailwindcss' prefix(sc);
 @plugin "@tailwindcss/typography";
 
 /* :root {

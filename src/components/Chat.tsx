@@ -162,40 +162,46 @@ export const Chat: React.FC<ChatProps> = ({
   }
 
   return (
-    <div className={clsx('flex h-full w-full flex-col bg-white px-4 pb-4', className)} data-testid='chat-root'>
+    <div className={clsx('sc:flex sc:h-full sc:w-full sc:flex-col sc:bg-white sc:px-4 sc:pb-4', className)} data-testid='chat-root'>
       {/* header */}
       <div
-        className={clsx('chat-drag-handle -mx-4 mb-2 flex items-center justify-between px-4 pt-4', !isFullScreen && 'cursor-move')}
+        className={clsx(
+          'chat-drag-handle sc:-mx-4 sc:mb-2 sc:flex sc:items-center sc:justify-between sc:px-4 sc:pt-4',
+          !isFullScreen && 'sc:cursor-move'
+        )}
         onDoubleClick={() => onToggleFullScreen && onToggleFullScreen()}>
-        <h2 className='text-xl font-semibold text-indigo-700'>SmartspAI</h2>
-        <div className='flex gap-2'>
+        <h2 className='sc:text-xl sc:font-semibold sc:text-indigo-700'>SmartspAI</h2>
+        <div className='sc:flex sc:gap-2'>
           {onToggleFullScreen && (
             <button
               onClick={onToggleFullScreen}
               aria-label={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
-              className='cursor-pointer rounded-md p-1 text-gray-600 hover:text-gray-900'>
+              className='sc:cursor-pointer sc:rounded-md sc:p-1 sc:text-gray-600 hover:sc:text-gray-900'>
               {isFullScreen ? (
-                <ArrowsPointingInIcon className='size-5' /> // shrink
+                <ArrowsPointingInIcon className='sc:size-5' /> // shrink
               ) : (
-                <ArrowsPointingOutIcon className='size-5' /> // expand
+                <ArrowsPointingOutIcon className='sc:size-5' /> // expand
               )}
             </button>
           )}
           {onClose && (
-            <button onClick={onClose} aria-label='Close chat' className='cursor-pointer rounded-md p-1 text-gray-600 hover:text-gray-900'>
-              <XMarkIcon className='size-5.5' strokeWidth={1.5} />
+            <button
+              onClick={onClose}
+              aria-label='Close chat'
+              className='sc:cursor-pointer sc:rounded-md sc:p-1 sc:text-gray-600 hover:sc:text-gray-900'>
+              <XMarkIcon className='sc:size-5.5' strokeWidth={1.5} />
             </button>
           )}
         </div>
       </div>
 
       {/* message list */}
-      <div className='mb-4 flex-1 overflow-y-auto rounded-lg border border-gray-300 p-4'>
+      <div className='sc:mb-4 sc:flex-1 sc:overflow-y-auto sc:rounded-lg sc:border sc:border-gray-300 sc:p-4'>
         {messages.map((msg, index) => (
-          <div key={index} className={`mb-2 flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div key={index} className={`sc:mb-2 sc:flex ${msg.sender === 'user' ? 'sc:justify-end' : 'sc:justify-start'}`}>
             <div
-              className={`prose max-w-[80%] rounded-xl px-4 py-2 break-words ${
-                msg.sender === 'user' ? 'bg-indigo-600 text-white' : 'border border-gray-300 bg-white'
+              className={`sc:prose sc:max-w-[80%] sc:rounded-xl sc:px-4 sc:py-2 sc:break-words ${
+                msg.sender === 'user' ? 'sc:bg-indigo-600 sc:text-white' : 'sc:border sc:border-gray-300 sc:bg-white'
               }`}
               style={msg.sender === 'assistant' ? { color: 'rgb(13, 13, 13)' } : {}}>
               <ReactMarkdown
@@ -211,13 +217,13 @@ export const Chat: React.FC<ChatProps> = ({
 
         {/* “Connecting…” bubble */}
         {isConnecting && (
-          <div className='mb-2 flex justify-start'>
-            <div className='prose inline-flex max-w-[80%] rounded-xl border border-white bg-white px-4 py-2'>
-              <span className='mr-2 font-medium text-slate-500/90'>Connecting</span>
-              <div className='thinking-dots pt-2'>
-                <span className='bg-slate-500/70'></span>
-                <span className='bg-slate-500/70'></span>
-                <span className='bg-slate-500/70'></span>
+          <div className='sc:mb-2 sc:flex sc:justify-start'>
+            <div className='sc:prose sc:inline-flex sc:max-w-[80%] sc:rounded-xl sc:border sc:border-white sc:bg-white sc:px-4 sc:py-2'>
+              <span className='sc:mr-2 sc:font-medium sc:text-slate-500/90'>Connecting</span>
+              <div className='thinking-dots sc:pt-2'>
+                <span className='sc:bg-slate-500/70'></span>
+                <span className='sc:bg-slate-500/70'></span>
+                <span className='sc:bg-slate-500/70'></span>
               </div>
             </div>
           </div>
@@ -225,12 +231,12 @@ export const Chat: React.FC<ChatProps> = ({
 
         {/* Thinking dots animation when loading */}
         {showLoader && (
-          <div className='mb-2 flex justify-start'>
-            <div className='prose max-w-[80%] rounded-xl border border-gray-300 bg-white px-4 py-2'>
+          <div className='sc:mb-2 sc:flex sc:justify-start'>
+            <div className='sc:prose sc:max-w-[80%] sc:rounded-xl sc:border sc:border-gray-300 sc:bg-white sc:px-4 sc:py-2'>
               <div className='thinking-dots'>
-                <span className='bg-[#888]'></span>
-                <span className='bg-[#888]'></span>
-                <span className='bg-[#888]'></span>
+                <span className='sc:bg-[#888]'></span>
+                <span className='sc:bg-[#888]'></span>
+                <span className='sc:bg-[#888]'></span>
               </div>
             </div>
           </div>
@@ -241,7 +247,7 @@ export const Chat: React.FC<ChatProps> = ({
       </div>
 
       {/* input */}
-      <form onSubmit={handleSubmit} className='flex'>
+      <form onSubmit={handleSubmit} className='sc:flex'>
         <input
           ref={inputRef} // Assign ref to the input element
           type='text'
@@ -250,10 +256,12 @@ export const Chat: React.FC<ChatProps> = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder='Type your message...'
-          className='flex-1 rounded-lg border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400 focus:outline-none'
+          className='sc:flex-1 sc:rounded-lg sc:border sc:border-gray-300 sc:px-4 sc:py-2 sc:text-black sc:focus:ring-2 sc:focus:ring-indigo-400 sc:focus:outline-none'
           required
         />
-        <button type='submit' className='ml-2 cursor-pointer rounded-lg bg-indigo-600 px-6 py-2 text-white transition hover:bg-indigo-700'>
+        <button
+          type='submit'
+          className='sc:ml-2 sc:cursor-pointer sc:rounded-lg sc:bg-indigo-600 sc:px-6 sc:py-2 sc:text-white sc:transition hover:sc:bg-indigo-700'>
           Send
         </button>
       </form>

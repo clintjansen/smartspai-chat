@@ -4,6 +4,8 @@ import ChatWidget from './components/ChatWidget'
 import ReactDOM from 'react-dom/client'
 import stylesText from './styles.css?inline'
 
+const VERSION = 1
+
 // ────────────────────────────────────────────────────────────────────────────
 class SmartspyChat extends HTMLElement {
   // HTML attributes that should be forwarded to React props
@@ -23,6 +25,8 @@ class SmartspyChat extends HTMLElement {
     ;(this._shadow as ShadowRoot).adoptedStyleSheets = [sheet]
 
     this._root = ReactDOM.createRoot(this._shadow)
+
+    console.log('SmartspyChat initialized version:', VERSION)
   }
 
   connectedCallback() {
