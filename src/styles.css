@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+/* @import 'tailwindcss' prefix(sc); */
 @plugin "@tailwindcss/typography";
 
 /* :root {
@@ -39,6 +40,22 @@
 
 .thinking-dots span:nth-child(2) {
   animation-delay: -0.16s;
+}
+
+/* expose design tokens + custom animation */
+@theme {
+  /* Makes the utility class  sc:animate-fade-in  available */
+  --animate-fade-in: fade-in 0.3s ease-in forwards;
+}
+
+/* Always-available keyframes (defined outside @theme) */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes bounce {
