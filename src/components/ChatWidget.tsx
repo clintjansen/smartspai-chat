@@ -7,12 +7,14 @@ import clsx from 'clsx'
 import { createPortal } from 'react-dom'
 
 export interface ChatWidgetProps extends Omit<ChatProps, 'onClose'> {
-  portalTarget?: HTMLElement
+  portalTarget?: any
 }
 
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.body, ...chatProps }) => {
   const [open, setOpen] = useState(false)
   const [isFull, setFull] = useState(false)
+
+  const target = portalTarget ?? document.body
 
   /* ---------- remember position/size between fullscreen hops ---------- */
   const [size, setSize] = useState(() => {
@@ -145,7 +147,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
             </Rnd>
           )}
         </AnimatePresence>,
-        portalTarget
+        target
       )}
     </>
   )

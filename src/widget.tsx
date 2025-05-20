@@ -4,7 +4,7 @@ import ChatWidget from './components/ChatWidget'
 import ReactDOM from 'react-dom/client'
 import stylesText from './styles.css?inline'
 
-const VERSION = 1
+const VERSION = 2
 
 // ────────────────────────────────────────────────────────────────────────────
 class SmartspyChat extends HTMLElement {
@@ -38,8 +38,9 @@ class SmartspyChat extends HTMLElement {
   }
 
   // -------------------------------------------------------------------------
+
   private render() {
-    this._root.render(<ChatWidget wsEndpoint={this.getAttribute('ws-endpoint') ?? ''} />)
+    this._root.render(<ChatWidget wsEndpoint={this.getAttribute('ws-endpoint') ?? ''} portalTarget={this._shadow} />)
   }
 }
 
