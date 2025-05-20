@@ -1,14 +1,17 @@
 {
   "name": "smartspai-chat",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:demo": "vite demo",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "release": "standard-version",
+    "prerelease": "npm run build",
+    "postrelease": "git push --follow-tags"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -37,6 +40,7 @@
     "globals": "^15.15.0",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
+    "standard-version": "^9.5.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0",
