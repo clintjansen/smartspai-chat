@@ -7,14 +7,27 @@ import clsx from 'clsx'
 import { createPortal } from 'react-dom'
 
 export interface ChatWidgetProps extends Omit<ChatProps, 'onClose'> {
-  portalTarget?: any
+  portalTarget?: HTMLElement | ShadowRoot
 }
 
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.body, ...chatProps }) => {
   const [open, setOpen] = useState(false)
   const [isFull, setFull] = useState(false)
 
-  const target = portalTarget ?? document.body
+  const target = React.useMemo(() => {
+    if (portalTarget instanceof ShadowRoot) {
+      const id = 'chat-portal'
+      let portalElement = portalTarget.getElementById(id) as HTMLElement
+      if (!portalElement) {
+        portalElement = document.createElement('div')
+        Object.assign(portalElement, { id, slot: 'portal' })
+        portalElement.style.overflow = 'hidden'
+        portalTarget.appendChild(portalElement)
+      }
+      return portalElement
+    }
+    return portalTarget as HTMLElement
+  }, [portalTarget])
 
   /* ---------- remember position/size between fullscreen hops ---------- */
   const [size, setSize] = useState(() => {
@@ -26,8 +39,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
       height: Math.max(560, window.innerHeight / heightRatio),
     }
   })
-
-  console.log('size:', size)
 
   const [pos, setPos] = useState(() => ({
     x: window.innerWidth - size.width - 24,
@@ -107,7 +118,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.
         type='button'
         aria-label={open ? 'Close chat' : 'Open chat'}
         onClick={() => setOpen((v) => !v)}
-        className='sc:fixed sc:right-6 sc:bottom-6 sc:z-[9999] sc:flex sc:h-16 sc:w-16 sc:cursor-pointer sc:items-center sc:justify-center sc:rounded-full sc:bg-indigo-600 sc:text-white sc:shadow-lg sc:focus:outline-none'
+        className='sc:fixed sc:right-6 sc:pointer-events-auto sc:bottom-6 sc:z-[9999] sc:flex sc:h-16 sc:w-16 sc:cursor-pointer sc:items-center sc:justify-center sc:rounded-full sc:bg-indigo-600 sc:text-white sc:shadow-lg sc:focus:outline-none'
         variants={fabVariants}
         animate={open ? 'open' : 'closed'}
         whileTap={{ scale: 0.9 }}
