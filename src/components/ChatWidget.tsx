@@ -10,8 +10,10 @@ export interface ChatWidgetProps extends Omit<ChatProps, 'onClose'> {
   portalTarget?: HTMLElement | ShadowRoot
 }
 
+// const isLocal = import.meta.env.MODE === 'development' && import.meta.env.VITE_LOCAL === 'true'
+
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.body, ...chatProps }) => {
-  const [open, setOpen] = useState(import.meta.env['VITE_IS_LOCAL'] === 'true')
+  const [open, setOpen] = useState(false)
   const [isFull, setFull] = useState(false)
 
   const target = React.useMemo(() => {
