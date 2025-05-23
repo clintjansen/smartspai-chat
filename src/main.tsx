@@ -6,11 +6,12 @@ import { ChatWidget } from './components/ChatWidget'
 import Home from './components/Home' // Home component might not be needed if ChatWidget is self-contained in the custom element
 import { StrictMode } from 'react'
 import stylesText from './styles.css?inline'
+import userJson from './user.json'
 
 const wsEndpointFromEnv = import.meta.env['VITE_WS_ENDPOINT'] || 'ws://localhost:8000/ws'
 
 class SmartspyChatWidgetElement extends HTMLElement {
-  static observedAttributes = ['ws-endpoint']
+  static observedAttributes = ['ws-endpoint', 'portal-target', 'user']
 
   private _shadow: ShadowRoot
   private _root: ReactDOMRoot | null = null
@@ -46,6 +47,8 @@ class SmartspyChatWidgetElement extends HTMLElement {
 
   private render() {
     const wsEndpoint = this.getAttribute('ws-endpoint') || wsEndpointFromEnv
+    const user = this.getAttribute('user') || JSON.stringify(userJson)
+
     if (!this._root) {
       this._root = createRoot(this._container)
     }
@@ -53,13 +56,13 @@ class SmartspyChatWidgetElement extends HTMLElement {
     this._root.render(
       <StrictMode>
         <Home />
-        <ChatWidget wsEndpoint={wsEndpoint} portalTarget={this._shadow} />
+        <ChatWidget wsEndpoint={wsEndpoint} portalTarget={this._shadow} user={user} isOpen />
       </StrictMode>
     )
   }
 }
 
-customElements.define('smartspy-chat-widget', SmartspyChatWidgetElement)
+customElements.define('smartspy-chat', SmartspyChatWidgetElement)
 
 // Now, instead of rendering directly to document.getElementById('root'),
 // you can append your custom element.
@@ -71,9 +74,11 @@ if (!appRoot) {
   document.body.appendChild(appRoot)
 }
 
-const chatWidgetElement = document.createElement('smartspy-chat-widget')
+const chatWidgetElement = document.createElement('smartspy-chat')
 // You can set the ws-endpoint attribute here if needed, or rely on the default from env
-// chatWidgetElement.setAttribute('ws-endpoint', 'your_custom_ws_endpoint_if_different');
+chatWidgetElement.setAttribute('user', JSON.stringify(userJson))
+// chatWidgetElement.setAttribute('ws-endpoint', wsEndpointFromEnv)
+
 appRoot.appendChild(chatWidgetElement)
 
 // If you still need the Home component or other parts of your app outside the widget:

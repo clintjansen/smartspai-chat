@@ -1,5 +1,6 @@
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import React, { FormEvent, useEffect, useRef, useState } from 'react'
+import { IncomingMsg, User, useChatSocket } from '../hooks/useChatSocket'
+import React, { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 
 import ReactMarkdown from 'react-markdown'
 import clsx from 'clsx'
@@ -8,11 +9,11 @@ import remarkGfm from 'remark-gfm'
 export interface ChatProps {
   wsEndpoint: string
   initialMessage?: string
-  /** Close handler injected by ChatWidget */
   onClose?: () => void
   className?: string
   onToggleFullScreen?: () => void
   isFullScreen?: boolean
+  user?: User
 }
 
 interface Message {
@@ -23,142 +24,86 @@ interface Message {
 
 export const Chat: React.FC<ChatProps> = ({
   wsEndpoint,
-  initialMessage = 'Scrape Posters for Drukwerkdeal in NL & BE', // debug msg
+  initialMessage = '',
   onClose,
   className = '',
   onToggleFullScreen,
   isFullScreen = false,
+  user,
 }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [showLoader, setLoader] = useState<string>('')
-  const [disableInput, setDisableInput] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(true)
+  const [loaderTool, setLoaderTool] = useState<string>('')
 
-  const ws = useRef<WebSocket | null>(null)
+  console.log('Chat user:', user)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const initialMessageSent = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const initialMessageSent = useRef(false)
 
-  // const sendMessage = (content: string) => {
-  //   if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return
+  /* ------------------------------------------------------------------ */
+  /* WebSocket ­– all network-side effects live inside the custom hook. */
+  /* ------------------------------------------------------------------ */
+  const handleIncoming = useCallback((msg: IncomingMsg) => {
+    if (msg.type === 'loading_state') {
+      setLoaderTool(msg.status === 'start' ? (msg.tool ?? '') : '')
+      return
+    }
 
-  //   const userMessage: Message = { sender: 'user', content }
-  //   setMessages((prev) => [...prev, userMessage])
-  //   ws.current.send(content)
-  // }
-
-  useEffect(() => {
-    let reconnect: ReturnType<typeof setTimeout> | null = null
-    let unmounted = false
-
-    const connectWebSocket = () => {
-      if (unmounted) return
-
-      setIsConnecting(true)
-      // Make sure to connect to your new endpoint, e.g., /ws/scrape
-      // ws.current = new WebSocket('ws://localhost:8000/ws')
-      ws.current = new WebSocket(wsEndpoint)
-
-      ws.current.onopen = () => {
-        console.log('WebSocket connected')
-        setIsConnecting(false)
-        setDisableInput(false)
-
-        if (!initialMessageSent.current) {
-          setTimeout(() => {
-            // sendMessage(initialMessage)
-            initialMessageSent.current = true
-          }, 1000)
-        }
-      }
-
-      ws.current.onmessage = (event: MessageEvent) => {
-        try {
-          // Parse the JSON message sent by the server.
-          const data = JSON.parse(event.data)
-          const sender: 'user' | 'assistant' = data.role
-
-          if (data.type === 'loading_state') {
-            if (data.status === 'start') {
-              setLoader(data.tool)
-            } else {
-              setLoader('')
-            }
-          } else {
-            setMessages((prev) => {
-              // Replace the last message if it is from the same sender (to handle streaming updates).
-              if (prev.length > 0 && prev[prev.length - 1].sender === sender) {
-                const updatedMessage: Message = {
-                  sender: sender,
-                  content: data.content,
-                  borderColor: sender === 'assistant' && data.status === 'error' ? 'border-red-300' : 'border-gray-300',
-                }
-                return [...prev.slice(0, prev.length - 1), updatedMessage]
-              }
-              return [...prev, { sender: sender, content: data.content }]
-            })
+    if (msg.type === 'chat' && msg.role) {
+      setMessages((prev): any => {
+        /* merge streaming chunks from the same sender */
+        if (prev.length && prev[prev.length - 1].sender === msg.role) {
+          const updated: Message = {
+            sender: msg.role,
+            content: msg.content ?? '',
+            borderColor: msg.role === 'assistant' && msg.status === 'error' ? 'border-red-300' : 'border-gray-300',
           }
-        } catch (err) {
-          console.error('Failed to parse message:', err)
+          return [...prev.slice(0, -1), updated]
         }
-      }
-
-      ws.current.onerror = (event: Event) => console.error('WebSocket error:', event)
-
-      ws.current.onclose = () => {
-        console.log('WebSocket disconnected')
-        setDisableInput(true)
-        setIsConnecting(true)
-
-        if (!unmounted) {
-          console.log(`Attempting to reconnect...`)
-          reconnect = setTimeout(() => {
-            connectWebSocket()
-          }, 1000)
-        }
-      }
+        return [...prev, { sender: msg.role, content: msg.content ?? '' }]
+      })
     }
+  }, [])
 
-    connectWebSocket()
+  const { sendJson, ready } = useChatSocket(wsEndpoint, user, handleIncoming)
 
-    return () => {
-      unmounted = true
-      if (reconnect) {
-        clearTimeout(reconnect)
-      }
-      if (ws.current) {
-        ws.current.onclose = null
-        ws.current.close()
-      }
+  /* send initial prompt once the socket is ready */
+  useEffect(() => {
+    if (ready && initialMessage && !initialMessageSent.current) {
+      sendJson({ type: 'chat', content: initialMessage })
+      initialMessageSent.current = true
     }
-  }, [wsEndpoint, initialMessage])
+  }, [ready, initialMessage, sendJson])
 
-  // Auto-scroll to the bottom when messages update.
+  /* auto-scroll on each message / loader change */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, showLoader])
+  }, [messages, loaderTool])
 
+  /* ------------------------------------------------------------------ */
+  /* UI handlers                                                         */
+  /* ------------------------------------------------------------------ */
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || !ws.current || ws.current.readyState !== WebSocket.OPEN) return
-
-    const userMessage: Message = { sender: 'user', content: input }
-    setMessages((prev) => [...prev, userMessage])
-    ws.current.send(input)
+    if (!input.trim()) return
+    setMessages((prev) => [...prev, { sender: 'user', content: input }])
+    sendJson({ type: 'chat', content: input })
     setInput('')
   }
 
-  // Custom renderer for anchor tags
-  const handleLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault() // Prevent default navigation
-    const linkText = event.currentTarget.textContent
-    if (linkText) {
-      setInput((prev) => prev + linkText + ' ') // Append text to input
-      inputRef.current?.focus() // Optional: focus the input after clicking
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    const text = e.currentTarget.textContent
+    if (text) {
+      setInput((prev) => `${prev}${text} `)
+      inputRef.current?.focus()
     }
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Render                                                              */
+  /* ------------------------------------------------------------------ */
   return (
     <div className={clsx('sc:flex sc:h-full sc:w-full sc:flex-col sc:bg-white sc:px-4 sc:pb-4', className)} data-testid='chat-root'>
       {/* header */}
@@ -167,7 +112,7 @@ export const Chat: React.FC<ChatProps> = ({
           'chat-drag-handle sc:-mx-4 sc:mb-2 sc:flex sc:items-center sc:justify-between sc:px-4 sc:pt-4',
           !isFullScreen && 'sc:cursor-move'
         )}
-        onDoubleClick={() => onToggleFullScreen && onToggleFullScreen()}>
+        onDoubleClick={() => onToggleFullScreen?.()}>
         <h2 className='sc:text-xl sc:font-semibold sc:text-indigo-700'>SmartspAI</h2>
         <div className='sc:flex sc:gap-2'>
           {onToggleFullScreen && (
@@ -175,11 +120,7 @@ export const Chat: React.FC<ChatProps> = ({
               onClick={onToggleFullScreen}
               aria-label={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
               className='sc:cursor-pointer sc:rounded-md sc:p-1 sc:text-gray-600 hover:sc:text-gray-900'>
-              {isFullScreen ? (
-                <ArrowsPointingInIcon className='sc:size-5' /> // shrink
-              ) : (
-                <ArrowsPointingOutIcon className='sc:size-5' /> // expand
-              )}
+              {isFullScreen ? <ArrowsPointingInIcon className='sc:size-5' /> : <ArrowsPointingOutIcon className='sc:size-5' />}
             </button>
           )}
           {onClose && (
@@ -195,61 +136,42 @@ export const Chat: React.FC<ChatProps> = ({
 
       {/* message list */}
       <div className='sc:mb-4 sc:flex-1 sc:overflow-y-auto sc:rounded-lg sc:border sc:border-gray-300 sc:p-4'>
-        {messages.map((msg, index) => (
-          <div key={index} className={`sc:mb-2 sc:flex ${msg.sender === 'user' ? 'sc:justify-end' : 'sc:justify-start'}`}>
+        {messages.map((m, i) => (
+          <div key={i} className={clsx('sc:mb-2 sc:flex', m.sender === 'user' ? 'sc:justify-end' : 'sc:justify-start')}>
             <div
-              className={`sc:prose sc:max-w-[80%] sc:rounded-xl sc:px-4 sc:py-2 sc:break-words ${
-                msg.sender === 'user' ? 'sc:bg-indigo-600 sc:text-white' : 'sc:border sc:border-gray-300 sc:bg-white'
-              }`}
-              style={msg.sender === 'assistant' ? { color: 'rgb(13, 13, 13)' } : {}}>
+              className={clsx(
+                'sc:prose sc:max-w-[80%] sc:rounded-xl sc:px-4 sc:py-2 sc:break-words',
+                m.sender === 'user' ? 'sc:bg-indigo-600 sc:text-white' : 'sc:border sc:border-gray-300 sc:bg-white',
+                m.borderColor
+              )}
+              style={m.sender === 'assistant' ? { color: 'rgb(13,13,13)' } : {}}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  a: ({ node, ...props }) => <a {...props} onClick={handleLinkClick} style={{ cursor: 'pointer' }} />,
+                  a: ({ node, ...props }) => (
+                    /* clickable suggestion chips */
+                    <a {...props} onClick={handleLinkClick} style={{ cursor: 'pointer' }} />
+                  ),
                 }}>
-                {msg.content}
+                {m.content}
               </ReactMarkdown>
             </div>
           </div>
         ))}
 
-        {/* “Connecting…” bubble */}
-        {isConnecting && (
-          <div className='sc:mb-2 sc:flex sc:justify-start'>
-            <div className='sc:prose sc:inline-flex sc:max-w-[80%] sc:rounded-xl sc:border sc:border-white sc:bg-white sc:px-4 sc:py-2'>
-              <span className='sc:mr-2 sc:font-medium sc:text-slate-500/90'>Connecting</span>
-              <div className='thinking-dots sc:pt-2'>
-                <span className='sc:bg-slate-500/70'></span>
-                <span className='sc:bg-slate-500/70'></span>
-                <span className='sc:bg-slate-500/70'></span>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* loader bubbles */}
+        {!ready && <StatusBubble label='Connecting' dotsClass='sc:bg-slate-500/70' />}
+        {loaderTool && <StatusBubble label='' dotsClass='sc:bg-[#888]' />}
 
-        {/* Thinking dots animation when loading */}
-        {showLoader && (
-          <div className='sc:mb-2 sc:flex sc:justify-start'>
-            <div className='sc:prose sc:max-w-[80%] sc:rounded-xl sc:border sc:border-gray-300 sc:bg-white sc:px-4 sc:py-2'>
-              <div className='thinking-dots'>
-                <span className='sc:bg-[#888]'></span>
-                <span className='sc:bg-[#888]'></span>
-                <span className='sc:bg-[#888]'></span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Dummy element for auto-scroll */}
         <div ref={messagesEndRef} />
       </div>
 
       {/* input */}
       <form onSubmit={handleSubmit} className='sc:flex'>
         <input
-          ref={inputRef} // Assign ref to the input element
+          ref={inputRef}
           type='text'
-          disabled={disableInput}
+          disabled={!ready}
           autoFocus
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -266,5 +188,24 @@ export const Chat: React.FC<ChatProps> = ({
     </div>
   )
 }
+
+/* ------------------------------------------------------------------ */
+/* Small presentational helper – keeps JSX above readable.            */
+/* ------------------------------------------------------------------ */
+const StatusBubble: React.FC<{
+  label: string
+  dotsClass: string
+}> = ({ label, dotsClass }) => (
+  <div className='sc:mb-2 sc:flex sc:justify-start'>
+    <div className='sc:prose sc:inline-flex sc:max-w-[80%] sc:rounded-xl sc:border sc:border-white sc:bg-white sc:px-4 sc:py-2'>
+      {label && <span className='sc:mr-2 sc:font-medium sc:text-slate-500/90'>{label}</span>}
+      <div className='thinking-dots sc:pt-2'>
+        <span className={dotsClass} />
+        <span className={dotsClass} />
+        <span className={dotsClass} />
+      </div>
+    </div>
+  </div>
+)
 
 export default Chat

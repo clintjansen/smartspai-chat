@@ -8,12 +8,14 @@ import { createPortal } from 'react-dom'
 
 export interface ChatWidgetProps extends Omit<ChatProps, 'onClose'> {
   portalTarget?: HTMLElement | ShadowRoot
+  isOpen?: boolean
+  user?: any
 }
 
 // const isLocal = import.meta.env.MODE === 'development' && import.meta.env.VITE_LOCAL === 'true'
 
-export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.body, ...chatProps }) => {
-  const [open, setOpen] = useState(false)
+export const ChatWidget: React.FC<ChatWidgetProps> = ({ portalTarget = document.body, isOpen = false, ...chatProps }) => {
+  const [open, setOpen] = useState(isOpen)
   const [isFull, setFull] = useState(false)
 
   const target = React.useMemo(() => {

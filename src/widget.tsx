@@ -2,14 +2,15 @@ import './styles.css'
 
 import ChatWidget from './components/ChatWidget'
 import ReactDOM from 'react-dom/client'
+import type { User } from './hooks/useChatSocket'
 import stylesText from './styles.css?inline'
 
-const VERSION = 4
+const VERSION = 5
 
 // ────────────────────────────────────────────────────────────────────────────
 class SmartspyChat extends HTMLElement {
   // HTML attributes that should be forwarded to React props
-  static observedAttributes = ['ws-endpoint', 'portal-target'] // add more if you need
+  static observedAttributes = ['ws-endpoint', 'portal-target', 'user']
 
   private readonly _shadow: ShadowRoot
   private readonly _root: ReactDOM.Root
@@ -17,7 +18,7 @@ class SmartspyChat extends HTMLElement {
 
   constructor() {
     super()
-    // this is executed ONCE and can’t throw afterwards
+
     this._shadow = this.attachShadow({ mode: 'open' })
     this._shadow.innerHTML = `<style>${stylesText}</style>` // load styles into shadow DOM
 
@@ -45,7 +46,17 @@ class SmartspyChat extends HTMLElement {
   // -------------------------------------------------------------------------
 
   private render() {
-    this._root.render(<ChatWidget wsEndpoint={this.getAttribute('ws-endpoint') ?? ''} portalTarget={this._shadow} />)
+    let user: User | undefined
+    const raw = this.getAttribute('user')
+    if (raw) {
+      try {
+        user = JSON.parse(raw)
+      } catch {
+        console.error('<smartspy-chat> invalid user JSON')
+      }
+    }
+
+    this._root.render(<ChatWidget wsEndpoint={this.getAttribute('ws-endpoint') ?? ''} portalTarget={this._shadow} user={user} />)
   }
 }
 
