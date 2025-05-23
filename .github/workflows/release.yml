@@ -2,10 +2,11 @@ name: build-and-release
 
 on:
   push:
-    tags: ['v*.*.*'] # only real semver tags
+    tags:
+      - 'v*.*.*'
 
 permissions:
-  contents: write # ① give the job push rights
+  contents: write # Allow the job to push commits and tags
 
 jobs:
   release:
@@ -15,30 +16,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: true # ② keep token for git push
+          persist-credentials: true # Retain credentials for git push
 
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with:
+          node-version: 20
 
       - run: npm ci
-      - run: npm run build # outputs to /dist
+      - run: npm run build # Outputs to /dist
 
-      # ───────────────────── attach /dist to the tag ─────────────────────
+      - name: Extract tag name
+        id: extract_tag
+        run: |
+          echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
       - name: Attach dist to the tag commit
-        env:
-          TAG_NAME: ${{ github.ref_name }} # e.g. v1.2.3
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add -f dist                       # ignore .gitignore
+          git add -f dist  # Force-add dist, overriding .gitignore
           git commit -m "build(dist): include artefacts for $TAG_NAME [skip ci]"
 
-          git tag -fa "$TAG_NAME" -m "$TAG_NAME" # move tag to new commit
+          git tag -fa "$TAG_NAME" -m "$TAG_NAME"  # Move tag to new commit
           git push --force origin HEAD:refs/tags/$TAG_NAME
-      # ────────────────────────────────────────────────────────────────────
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.TAG_NAME }}
