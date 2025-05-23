@@ -2,11 +2,7 @@ name: build-and-release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
-
-permissions:
-  contents: write # Allow the job to push commits and tags
+    tags: ['v*.*.*'] # only real semver tags
 
 jobs:
   release:
@@ -14,35 +10,34 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true # Retain credentials for git push
+        with: { fetch-depth: 0 } # we need the tag object
 
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+        with: { node-version: 20 }
 
       - run: npm ci
-      - run: npm run build # Outputs to /dist
+      - run: npm run build # must output to /dist
 
-      - name: Extract tag name
-        id: extract_tag
-        run: |
-          echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
+      # ──────────────────────────────────────────────────────────────
       - name: Attach dist to the tag commit
+        env:
+          TAG_NAME: ${{ github.ref_name }} # e.g. v1.2.3
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add -f dist  # Force-add dist, overriding .gitignore
+          # 1. add artefacts, overriding .gitignore
+          git add -f dist
           git commit -m "build(dist): include artefacts for $TAG_NAME [skip ci]"
 
-          git tag -fa "$TAG_NAME" -m "$TAG_NAME"  # Move tag to new commit
-          git push --force origin HEAD:refs/tags/$TAG_NAME
+          # 2. move the tag to this new commit
+          git tag -fa "$TAG_NAME" -m "$TAG_NAME"
 
+          # 3. fast-push the updated ref → no separate branch needed
+          git push --force origin HEAD:refs/tags/$TAG_NAME
+      # ──────────────────────────────────────────────────────────────
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.TAG_NAME }}
-          name: ${{ env.TAG_NAME }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}

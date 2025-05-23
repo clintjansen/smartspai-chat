@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client'
 import type { User } from './hooks/useChatSocket'
 import stylesText from './styles.css?inline'
 
-const VERSION = 5
+const VERSION = 6
 
 // ────────────────────────────────────────────────────────────────────────────
 class SmartspyChat extends HTMLElement {
