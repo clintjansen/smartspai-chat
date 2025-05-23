@@ -87,7 +87,7 @@ export const Chat: React.FC<ChatProps> = ({
 
   const handleRegister = (user: User) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ role: Role.SYSTEM, data: user }))
+      ws.current.send(JSON.stringify({ role: Role.SYSTEM, data: user, type: 'register' }))
     }
   }
 
