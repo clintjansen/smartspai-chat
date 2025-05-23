@@ -1,0 +1,44 @@
+name: build-and-release
+
+on:
+  push:
+    tags: ['v*.*.*'] # only real semver tags
+
+permissions:
+  contents: write # ① give the job push rights
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true # ② keep token for git push
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - run: npm ci
+      - run: npm run build # outputs to /dist
+
+      # ───────────────────── attach /dist to the tag ─────────────────────
+      - name: Attach dist to the tag commit
+        env:
+          TAG_NAME: ${{ github.ref_name }} # e.g. v1.2.3
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -f dist                       # ignore .gitignore
+          git commit -m "build(dist): include artefacts for $TAG_NAME [skip ci]"
+
+          git tag -fa "$TAG_NAME" -m "$TAG_NAME" # move tag to new commit
+          git push --force origin HEAD:refs/tags/$TAG_NAME
+      # ────────────────────────────────────────────────────────────────────
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
