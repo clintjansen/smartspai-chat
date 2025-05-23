@@ -23,7 +23,7 @@ export interface OutgoingMsg {
   user?: User
 }
 
-export function useChatSocket(endpoint: string, user: User | undefined, onMessage: (msg: IncomingMsg) => void) {
+export function useChatSocket(wsEndpoint: string, user: User | undefined, onMessage: (msg: IncomingMsg) => void) {
   const ws = useRef<WebSocket>(null)
   const [ready, setReady] = useState(false)
 
@@ -31,13 +31,13 @@ export function useChatSocket(endpoint: string, user: User | undefined, onMessag
 
   // --- lifecycle -----------------------------------------------------------
   useEffect(() => {
-    if (!endpoint) return
+    if (!wsEndpoint) return
 
     let cancelled = false
     let timer: NodeJS.Timeout
 
     const connect = () => {
-      ws.current = new WebSocket(endpoint)
+      ws.current = new WebSocket(wsEndpoint)
 
       ws.current.onopen = () => {
         setReady(true)
@@ -55,7 +55,7 @@ export function useChatSocket(endpoint: string, user: User | undefined, onMessag
 
       ws.current.onclose = () => {
         setReady(false)
-        if (!cancelled) timer = setTimeout(connect, 1_000) // auto-reconnect
+        if (!cancelled) timer = setTimeout(connect, 3_000) // auto-reconnect
       }
 
       ws.current.onerror = (e) => console.error('WS error:', e)
@@ -67,7 +67,7 @@ export function useChatSocket(endpoint: string, user: User | undefined, onMessag
       clearTimeout(timer)
       ws.current?.close()
     }
-  }, [endpoint, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [wsEndpoint, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { sendJson, ready }
 }
